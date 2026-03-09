@@ -20,13 +20,16 @@ def create_app():
     app.url_map.strict_slashes = False
 
     # ── Logging ───────────────────────────────────────────────
-    log_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server.log"))
-    logging.basicConfig(
-        filename=log_file,
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s: %(message)s',
-        force=True
-    )
+    if PRODUCTION:
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s', force=True)
+    else:
+        log_file = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "server.log"))
+        logging.basicConfig(
+            filename=log_file,
+            level=logging.INFO,
+            format='%(asctime)s %(levelname)s: %(message)s',
+            force=True
+        )
 
     @app.before_request
     def debug_log():
@@ -66,8 +69,12 @@ def create_app():
     app.register_blueprint(posts_bp,    url_prefix="/api/posts")
 
     # ── Upload Endpoint ───────────────────────────────────────
-    UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "..", "frontend", "assets", "uploads")
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    if PRODUCTION:
+        UPLOAD_FOLDER = "/tmp"  # Vercel only allows writing to /tmp
+    else:
+        UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "..", "frontend", "assets", "uploads")
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        
     app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
     import werkzeug.utils
