@@ -34,7 +34,10 @@ def execute_query(query, params=(), fetchone=False, fetchall=False):
                 return cursor.fetchall()
             return cursor.lastrowid # For inserts
     except Exception as e:
-        print(f"Database Query Error: {e}")
+        print(f"[DB ERROR] Query: {query}")
+        print(f"[DB ERROR] Params: {params}")
+        import traceback
+        traceback.print_exc()
         raise e
     finally:
         conn.close()
