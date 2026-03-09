@@ -1663,3 +1663,15 @@ werkzeug.exceptions.BadRequest: 400 Bad Request: Failed to decode JSON object: E
 2026-03-09 09:08:50,998 INFO: 127.0.0.1 - - [09/Mar/2026 09:08:50] "GET /api/posts/3/comments HTTP/1.1" 200 -
 2026-03-09 09:08:51,026 INFO: 127.0.0.1 - - [09/Mar/2026 09:08:51] "GET /api/posts/2/comments HTTP/1.1" 200 -
 2026-03-09 09:08:51,031 INFO: 127.0.0.1 - - [09/Mar/2026 09:08:51] "GET /api/posts/1/comments HTTP/1.1" 200 -
+2026-03-09 09:47:34,238 INFO:  * Detected change in 'C:\\Users\\JOSHUA\\OneDrive\\Desktop\\back2me_v2\\backend\\app.py', reloading
+2026-03-09 09:47:34,382 INFO:  * Restarting with stat
+2026-03-09 09:47:35,471 WARNING:  * Debugger is active!
+2026-03-09 09:47:35,488 INFO:  * Debugger PIN: 138-213-860
+2026-03-09 10:01:22,693 INFO:  * Detected change in 'C:\\Users\\JOSHUA\\OneDrive\\Desktop\\back2me_v2\\backend\\config\\database.py', reloading
+2026-03-09 10:01:22,800 INFO:  * Restarting with stat
+2026-03-09 10:01:23,913 WARNING:  * Debugger is active!
+2026-03-09 10:01:23,929 INFO:  * Debugger PIN: 138-213-860
+2026-03-09 10:26:25,701 INFO:  * Detected change in 'C:\\Users\\JOSHUA\\OneDrive\\Desktop\\back2me_v2\\backend\\config\\database.py', reloading
+2026-03-09 10:26:25,783 INFO:  * Restarting with stat
+2026-03-09 10:26:26,928 WARNING:  * Debugger is active!
+2026-03-09 10:26:26,948 INFO:  * Debugger PIN: 138-213-860

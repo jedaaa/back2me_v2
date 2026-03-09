@@ -7,6 +7,7 @@ DB_CONFIG = {
     'user': os.environ.get('DB_USER', 'root'),
     'password': os.environ.get('DB_PASSWORD', 'mysql123'),
     'database': os.environ.get('DB_NAME', 'back2me_db'),
+    'port': int(os.environ.get('DB_PORT', 3306)),
     'cursorclass': DictCursor, # Returns dicts instead of tuples
     'autocommit': True
 }
@@ -23,7 +24,7 @@ def execute_query(query, params=(), fetchone=False, fetchall=False):
     """Utility to execute query and fetch results safely."""
     conn = get_db_connection()
     if not conn:
-        return None
+        raise Exception("Database Connection Failed. Check DB_HOST, DB_USER, DB_PASSWORD, DB_NAME, DB_PORT environment variables.")
         
     try:
         with conn.cursor() as cursor:
