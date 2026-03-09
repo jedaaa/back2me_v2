@@ -231,7 +231,7 @@ async function renderPostList(gridId, type, searchVal) {
 
         grid.innerHTML = '';
 
-        if (data.posts.length === 0) {
+        if (!data || !data.posts || data.posts.length === 0) {
             grid.innerHTML = '<p style="color: var(--text-secondary); grid-column: 1/-1; text-align: center; padding: 3rem;">No items found.</p>';
             return;
         }
