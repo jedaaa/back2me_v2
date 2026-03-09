@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Back2Me – Lost & Found</title>
+<script>
+  // Fast redirect before any paint
+  fetch('/api/me', { credentials: 'include' })
+    .then(r => r.ok
+      ? window.location.replace('/pages/home.html')
+      : window.location.replace('/pages/login.html'))
+    .catch(() => window.location.replace('/pages/login.html'));
+</script>
+<style>
+  body { background: #080b12; display: grid; place-items: center; min-height: 100vh; font-family: sans-serif; color: #8892a4; }
+</style>
+</head>
+<body>Loading…</body>
+</html>

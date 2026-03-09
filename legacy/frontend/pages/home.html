@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Home – Back2Me</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<script src="../js/app.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(async () => {
+  const user = await requireAuth();
+  if (!user) return;
+
+  buildShell('home', `
+    <h1 class="page-title">📰 Feed</h1>
+    <p class="page-subtitle">All reported lost & found items on campus</p>
+    <div id="feed" class="feed"></div>
+    <div id="loadMoreWrap" class="hidden" style="text-align:center;margin-top:20px;">
+      <button id="loadMoreBtn" class="btn btn-outline">Load more</button>
+    </div>
+  `);
+  fillUser(user);
+
+  let page = 1;
+  let loading = false;
+
+  async function loadPosts(reset = false) {
+    if (loading) return;
+    loading = true;
+    const feed = document.getElementById('feed');
+    if (reset) { feed.innerHTML = '<div class="spinner"></div>'; page = 1; }
+
+    try {
+      const data = await Posts.getAll(page);
+      if (reset) feed.innerHTML = '';
+
+      if (!data.posts || data.posts.length === 0) {
+        if (reset) showEmpty('feed', 'No Posts Yet', 'Be the first to report a lost or found item.');
+        document.getElementById('loadMoreWrap').classList.add('hidden');
+        return;
+      }
+
+      data.posts.forEach(p => {
+        feed.insertAdjacentHTML('beforeend', renderPost(p, user.user_id));
+      });
+
+      const hasMore = page * data.page_size < data.total;
+      document.getElementById('loadMoreWrap').classList.toggle('hidden', !hasMore);
+      page++;
+    } catch (err) {
+      feed.innerHTML = `<div class="empty-state"><p class="text-muted">${err.message}</p></div>`;
+    } finally {
+      loading = false;
+    }
+  }
+
+  document.getElementById('loadMoreBtn')?.addEventListener('click', () => loadPosts());
+
+  await loadPosts(true);
+})();
+</script>
+</body>
+</html>

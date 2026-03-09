@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Back2Me - Rediscover What's Lost</title>
+    <!-- Modern Font: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+
+<body>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Application Shell -->
+    <div id="app" class="app-shell">
+
+        <!-- Navigation Bar -->
+        <nav id="navbar" class="navbar glass hidden">
+            <div class="nav-brand">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Back2Me</span>
+            </div>
+            <div class="nav-links">
+                <a href="#recent" class="nav-link" data-route="recent"><i class="fa-solid fa-clock-rotate-left"></i>
+                    Recent Posts</a>
+                <a href="#lost" class="nav-link" data-route="lost"><i class="fa-solid fa-search"></i> Lost Items</a>
+                <a href="#found" class="nav-link" data-route="found"><i class="fa-solid fa-box-open"></i> Found
+                    Items</a>
+                <a href="#search" class="nav-link" data-route="search"><i class="fa-solid fa-magnifying-glass"></i>
+                    Search</a>
+                <a href="#create" class="nav-link" data-route="create"><i class="fa-solid fa-plus"></i> Post</a>
+                <a href="#profile" class="nav-link" data-route="profile"><i class="fa-solid fa-user"></i> Profile</a>
+                <button id="logout-btn" class="nav-link btn-ghost"><i
+                        class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
+        </nav>
+
+        <!-- Dynamic View Container -->
+        <main id="view-container" class="view-container">
+            <!-- View content is injected here via JS -->
+            <div class="spinner-container">
+                <div class="spinner"></div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+
+</html>

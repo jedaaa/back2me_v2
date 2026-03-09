@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Register – Back2Me</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+
+<body class="auth-page">
+
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="logo-icon">📍</div>
+      Back<span class="logo-2">2</span>Me
+    </div>
+    <p class="auth-tagline">Create your campus account</p>
+
+    <form id="regForm">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" id="username" class="form-input" placeholder="e.g. johndoe" required minlength="3">
+        <span class="form-error" id="unErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="email" id="email" class="form-input" placeholder="you@campus.edu" required>
+        <span class="form-error" id="emailErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" id="password" class="form-input" placeholder="Min. 6 characters" required>
+        <span class="form-error" id="pwErr"></span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Confirm Password</label>
+        <input type="password" id="confirm" class="form-input" placeholder="Repeat password" required>
+        <span class="form-error" id="cfErr"></span>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-full btn-lg" id="submitBtn">
+        Create Account
+      </button>
+
+      <span class="form-error" id="globalErr" style="display:block;text-align:center;margin-top:10px;"></span>
+    </form>
+
+    <p class="auth-footer">
+      Already have an account? <a href="login.html" class="auth-link">Sign in</a>
+    </p>
+  </div>
+
+  <script src="../js/app.js"></script>
+  <script>
+    (async () => {
+      const form = document.getElementById('regForm');
+      const submit = document.getElementById('submitBtn');
+
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        clearErrors();
+
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm').value;
+
+        let valid = true;
+        if (username.length < 3) { showErr('unErr', 'Min. 3 characters'); valid = false; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('emailErr', 'Invalid email'); valid = false; }
+        if (password.length < 6) { showErr('pwErr', 'Min. 6 characters'); valid = false; }
+        if (password !== confirm) { showErr('cfErr', 'Passwords do not match'); valid = false; }
+        if (!valid) return;
+
+        submit.disabled = true;
+        submit.textContent = 'Creating account…';
+
+        try {
+          await Auth.register(username, email, password);
+          window.location.href = '/pages/home.html';
+        } catch (err) {
+          showErr('globalErr', err.message);
+          submit.disabled = false;
+          submit.textContent = 'Create Account';
+        }
+      });
+
+      // check if already logged in
+      const user = await Auth.me();
+      if (user) { window.location.href = '/pages/home.html'; return; }
+
+      function showErr(id, msg) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = msg; el.classList.add('show'); el.style.display = 'block'; }
+      }
+      function clearErrors() {
+        document.querySelectorAll('.form-error').forEach(el => {
+          el.textContent = ''; el.classList.remove('show'); el.style.display = '';
+        });
+      }
+    })();
+  </script>
+</body>
+
+</html>

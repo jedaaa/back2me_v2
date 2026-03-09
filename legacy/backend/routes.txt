@@ -1,0 +1,18 @@
+/<path:filename> {'GET', 'OPTIONS', 'HEAD'}
+/api/register {'OPTIONS', 'POST'}
+/api/login {'OPTIONS', 'POST'}
+/api/logout {'OPTIONS', 'POST'}
+/api/me {'GET', 'OPTIONS', 'HEAD'}
+/api/forgot-password {'OPTIONS', 'POST'}
+/api/posts {'OPTIONS', 'POST'}
+/api/posts {'GET', 'OPTIONS', 'HEAD'}
+/api/posts/lost {'GET', 'OPTIONS', 'HEAD'}
+/api/posts/found {'GET', 'OPTIONS', 'HEAD'}
+/api/posts/search {'GET', 'OPTIONS', 'HEAD'}
+/api/posts/<post_id> {'DELETE', 'OPTIONS'}
+/api/messages {'OPTIONS', 'POST'}
+/api/messages/conversations {'GET', 'OPTIONS', 'HEAD'}
+/api/messages/<other_id> {'GET', 'OPTIONS', 'HEAD'}
+/<path:path> {'GET', 'OPTIONS', 'HEAD'}
+/ {'GET', 'OPTIONS', 'HEAD'}
+/api/health {'GET', 'OPTIONS', 'HEAD'}

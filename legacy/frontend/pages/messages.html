@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Messages – Back2Me</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<script src="../js/app.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(async () => {
+  const user = await requireAuth();
+  if (!user) return;
+
+  // The messages layout overrides the default main-content padding
+  buildShell('messages', `<div id="messages-root"></div>`);
+  fillUser(user);
+
+  // Replace main-content with the messages layout
+  const main = document.getElementById('main-content');
+  main.style.padding = '0';
+  main.style.maxWidth = '100%';
+  main.style.overflow = 'hidden';
+  main.style.height = 'calc(100vh - 64px)';
+  main.style.display = 'flex';
+
+  main.innerHTML = `
+<div class="messages-layout" style="width:100%;border-radius:0;border:none;height:100%;">
+
+  <!-- CONVERSATIONS LIST -->
+  <div class="conv-panel">
+    <div class="conv-header">💬 Messages</div>
+    <div class="conv-list" id="convList">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="chat-panel" id="chatPanel">
+    <div class="empty-state" id="chatEmpty" style="height:100%;">
+      <div class="empty-icon">💬</div>
+      <div class="empty-title">Select a conversation</div>
+      <p class="empty-text">Choose a conversation from the left, or message someone from a post.</p>
+    </div>
+
+    <div id="chatActive" class="hidden" style="display:flex;flex-direction:column;height:100%;">
+      <div class="chat-header" id="chatHeader">
+        <img id="chatAvatar" src="" alt="" class="conv-avatar" style="width:36px;height:36px;">
+        <span id="chatName" style="font-weight:600;"></span>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-bar">
+        <input type="text" id="msgInput" class="form-input" placeholder="Type a message…" autocomplete="off">
+        <button id="sendBtn" class="btn btn-primary">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>`;
+
+  let activePartnerId = null;
+  let pollTimer       = null;
+  const urlParams     = new URLSearchParams(window.location.search);
+  const toId          = urlParams.get('to');
+  const toName        = urlParams.get('name') || 'User';
+
+  // ── load conversations ──────────────────────────────────
+  async function loadConversations() {
+    const list = document.getElementById('convList');
+    try {
+      const data = await Messages.conversations();
+      list.innerHTML = '';
+
+      // If we have a "to" param, ensure it's in the list
+      if (toId && !data.conversations.find(c => c.partner_id === toId)) {
+        data.conversations.unshift({
+          partner_id: toId,
+          partner_username: toName,
+          partner_image: `https://ui-avatars.com/api/?name=${encodeURIComponent(toName)}&background=6366f1&color=fff&size=64`,
+          last_message: '',
+          last_timestamp: '',
+        });
+      }
+
+      if (data.conversations.length === 0) {
+        list.innerHTML = `<div class="empty-state" style="padding:40px 20px;">
+          <div class="empty-icon" style="font-size:2rem;">📭</div>
+          <p class="text-muted text-sm">No conversations yet</p>
+        </div>`;
+        return;
+      }
+
+      data.conversations.forEach(conv => {
+        const avatar = conv.partner_image ||
+          `https://ui-avatars.com/api/?name=${encodeURIComponent(conv.partner_username)}&background=6366f1&color=fff&size=64`;
+        const item = document.createElement('div');
+        item.className = 'conv-item' + (conv.partner_id === activePartnerId ? ' active' : '');
+        item.dataset.partnerId   = conv.partner_id;
+        item.dataset.partnerName = conv.partner_username;
+        item.dataset.partnerImg  = avatar;
+        item.innerHTML = `
+          <img class="conv-avatar" src="${esc(avatar)}" alt="${esc(conv.partner_username)}">
+          <div class="conv-meta">
+            <div class="conv-name">${esc(conv.partner_username)}</div>
+            <div class="conv-preview">${esc(conv.last_message || 'Start a conversation')}</div>
+          </div>`;
+        item.addEventListener('click', () => openThread(conv.partner_id, conv.partner_username, avatar));
+        list.appendChild(item);
+      });
+
+    } catch (err) {
+      list.innerHTML = `<div class="empty-state"><p class="text-muted">${err.message}</p></div>`;
+    }
+  }
+
+  // ── open thread ─────────────────────────────────────────
+  async function openThread(partnerId, partnerName, partnerAvatar) {
+    activePartnerId = partnerId;
+    clearInterval(pollTimer);
+
+    // highlight active conv
+    document.querySelectorAll('.conv-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.partnerId === partnerId);
+    });
+
+    const empty  = document.getElementById('chatEmpty');
+    const active = document.getElementById('chatActive');
+    empty.classList.add('hidden');
+    active.classList.remove('hidden');
+    active.style.display = 'flex';
+
+    document.getElementById('chatAvatar').src      = partnerAvatar;
+    document.getElementById('chatName').textContent = partnerName;
+    document.getElementById('chatMessages').innerHTML = '<div class="spinner"></div>';
+
+    await renderThread(partnerId);
+    pollTimer = setInterval(() => renderThread(partnerId), 5000);
+  }
+
+  async function renderThread(partnerId) {
+    const container = document.getElementById('chatMessages');
+    try {
+      const data = await Messages.thread(partnerId);
+      const atBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 60;
+      container.innerHTML = '';
+
+      if (data.messages.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="flex:1;">
+          <div class="empty-icon">✉️</div>
+          <p class="empty-text">No messages yet. Say hello!</p>
+        </div>`;
+        return;
+      }
+
+      data.messages.forEach(msg => {
+        const isMine = msg.sender_id === user.user_id;
+        const time   = new Date(msg.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+        const bubble = document.createElement('div');
+        bubble.innerHTML = `
+          <div class="msg-bubble ${isMine ? 'sent' : 'received'}">
+            ${esc(msg.message_text)}
+            <div class="msg-time">${time}</div>
+          </div>`;
+        container.appendChild(bubble);
+      });
+
+      if (atBottom) container.scrollTop = container.scrollHeight;
+    } catch (_) {}
+  }
+
+  // ── send message ────────────────────────────────────────
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  document.getElementById('msgInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  async function sendMessage() {
+    const input = document.getElementById('msgInput');
+    const text  = input.value.trim();
+    if (!text || !activePartnerId) return;
+    input.value = '';
+    try {
+      await Messages.send(activePartnerId, text);
+      await renderThread(activePartnerId);
+      await loadConversations();
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  }
+
+  // ── init ────────────────────────────────────────────────
+  await loadConversations();
+  if (toId) {
+    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(toName)}&background=6366f1&color=fff&size=64`;
+    await openThread(toId, toName, avatar);
+  }
+})();
+</script>
+</body>
+</html>

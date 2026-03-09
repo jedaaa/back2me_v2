@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Search – Back2Me</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<script src="../js/app.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(async () => {
+  const user = await requireAuth();
+  if (!user) return;
+
+  buildShell('search', `
+    <h1 class="page-title">🔍 Search</h1>
+    <p class="page-subtitle">Find lost or found items across campus</p>
+
+    <div class="search-bar-wrap">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchQ" class="form-input"
+          placeholder="Search by item, place, location…">
+      </div>
+      <select id="typeFilter" class="form-select" style="width:160px;">
+        <option value="all">All Types</option>
+        <option value="lost">Lost Only</option>
+        <option value="found">Found Only</option>
+      </select>
+      <button id="searchBtn" class="btn btn-primary">Search</button>
+      <button id="clearBtn" class="btn btn-ghost">Clear</button>
+    </div>
+
+    <div id="resultsInfo" class="text-muted text-sm mb-16 hidden"></div>
+    <div id="feed" class="feed">
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Start Searching</div>
+        <p class="empty-text">Type a keyword above and hit Search.</p>
+      </div>
+    </div>
+    <div id="loadMoreWrap" class="hidden" style="text-align:center;margin-top:20px;">
+      <button id="loadMoreBtn" class="btn btn-outline">Load more</button>
+    </div>
+  `);
+  fillUser(user);
+
+  // pull query from URL ?q=
+  const urlQ    = new URLSearchParams(window.location.search).get('q') || '';
+  const qInput  = document.getElementById('searchQ');
+  if (urlQ) qInput.value = urlQ;
+
+  let currentQ    = urlQ;
+  let currentType = 'all';
+  let page        = 1;
+  let loading     = false;
+
+  async function doSearch(reset = false) {
+    if (loading) return;
+    loading = true;
+    const feed = document.getElementById('feed');
+    if (reset) { feed.innerHTML = '<div class="spinner"></div>'; page = 1; }
+
+    try {
+      const data = await Posts.search(currentQ, currentType, page);
+      if (reset) feed.innerHTML = '';
+
+      const info = document.getElementById('resultsInfo');
+      if (reset) {
+        info.textContent = `${data.total} result${data.total !== 1 ? 's' : ''} for "${currentQ}"`;
+        info.classList.remove('hidden');
+      }
+
+      if (!data.posts || data.posts.length === 0) {
+        if (reset) showEmpty('feed', 'No Results Found',
+          `No items match "${currentQ}". Try different keywords or clear the filter.`);
+        document.getElementById('loadMoreWrap').classList.add('hidden');
+        return;
+      }
+
+      data.posts.forEach(p => feed.insertAdjacentHTML('beforeend', renderPost(p, user.user_id)));
+
+      const hasMore = page * 20 < data.total;
+      document.getElementById('loadMoreWrap').classList.toggle('hidden', !hasMore);
+      page++;
+    } catch (err) {
+      feed.innerHTML = `<div class="empty-state"><p class="text-muted">${err.message}</p></div>`;
+    } finally { loading = false; }
+  }
+
+  function runSearch() {
+    currentQ    = qInput.value.trim();
+    currentType = document.getElementById('typeFilter').value;
+    doSearch(true);
+  }
+
+  document.getElementById('searchBtn').addEventListener('click', runSearch);
+  qInput.addEventListener('keydown', e => { if (e.key === 'Enter') runSearch(); });
+  document.getElementById('typeFilter').addEventListener('change', () => {
+    if (currentQ) runSearch();
+  });
+  document.getElementById('clearBtn').addEventListener('click', () => {
+    qInput.value = ''; currentQ = ''; currentType = 'all';
+    document.getElementById('typeFilter').value = 'all';
+    document.getElementById('resultsInfo').classList.add('hidden');
+    document.getElementById('feed').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Start Searching</div>
+        <p class="empty-text">Type a keyword above and hit Search.</p>
+      </div>`;
+    document.getElementById('loadMoreWrap').classList.add('hidden');
+  });
+  document.getElementById('loadMoreBtn')?.addEventListener('click', () => doSearch());
+
+  // auto-search if URL had a query
+  if (urlQ) runSearch();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Create Post – Back2Me</title>
+<link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+<script src="../js/app.js"></script>
+<script src="../js/shell.js"></script>
+<script>
+(async () => {
+  const user = await requireAuth();
+  if (!user) return;
+
+  buildShell('create-post', `
+    <h1 class="page-title">✏️ Create Post</h1>
+    <p class="page-subtitle">Report a lost or found item on campus</p>
+
+    <div style="background:var(--bg-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;max-width:640px;">
+      <form id="createForm">
+
+        <div class="form-group">
+          <label class="form-label">Post Type *</label>
+          <div style="display:flex;gap:12px;">
+            <label style="flex:1;cursor:pointer;">
+              <input type="radio" name="post_type" value="lost" required style="display:none" id="typeLost">
+              <div class="type-btn" id="btnLost"
+                style="padding:14px;border:2px solid var(--border);border-radius:var(--radius-md);text-align:center;transition:all .2s;font-weight:600;">
+                🔴 Lost Item
+              </div>
+            </label>
+            <label style="flex:1;cursor:pointer;">
+              <input type="radio" name="post_type" value="found" style="display:none" id="typeFound">
+              <div class="type-btn" id="btnFound"
+                style="padding:14px;border:2px solid var(--border);border-radius:var(--radius-md);text-align:center;transition:all .2s;font-weight:600;">
+                🟢 Found Item
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Item Name *</label>
+          <input type="text" id="item_name" class="form-input" placeholder="e.g. Blue Nike Backpack" required>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="form-group">
+            <label class="form-label">Place</label>
+            <input type="text" id="place" class="form-input" placeholder="e.g. Library 2nd Floor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Location *</label>
+            <input type="text" id="location" class="form-input" placeholder="e.g. Main Campus" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Time / Date</label>
+          <input type="text" id="time" class="form-input" placeholder="e.g. Today, 3:00 PM">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;"> (max 200 chars)</span>
+          </label>
+          <textarea id="description" class="form-textarea" maxlength="200"
+            placeholder="Describe the item in detail — colour, brand, contents…"></textarea>
+          <div class="char-counter" id="charCount">0 / 200</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Image URL</label>
+          <input type="url" id="image_url" class="form-input" placeholder="https://…">
+          <div id="imgPreviewWrap" class="hidden" style="margin-top:10px;border-radius:var(--radius-md);overflow:hidden;max-height:200px;">
+            <img id="imgPreview" style="width:100%;object-fit:cover;" alt="Preview">
+          </div>
+        </div>
+
+        <span class="form-error" id="globalErr" style="display:block;margin-bottom:14px;"></span>
+
+        <button type="submit" class="btn btn-primary btn-lg w-full" id="submitBtn">
+          Publish Post
+        </button>
+      </form>
+    </div>
+  `);
+  fillUser(user);
+
+  // type toggle styling
+  ['Lost','Found'].forEach(t => {
+    document.getElementById(`type${t}`).addEventListener('change', () => {
+      document.getElementById('btnLost').style.borderColor  = t==='Lost'  ? 'var(--danger)'  : 'var(--border)';
+      document.getElementById('btnFound').style.borderColor = t==='Found' ? 'var(--success)' : 'var(--border)';
+      document.getElementById('btnLost').style.color  = t==='Lost'  ? 'var(--danger)'  : '';
+      document.getElementById('btnFound').style.color = t==='Found' ? 'var(--success)' : '';
+    });
+  });
+
+  // char counter
+  const descEl  = document.getElementById('description');
+  const counter  = document.getElementById('charCount');
+  descEl.addEventListener('input', () => {
+    const n = descEl.value.length;
+    counter.textContent = `${n} / 200`;
+    counter.className = 'char-counter' + (n > 180 ? ' warn' : '') + (n >= 200 ? ' over' : '');
+  });
+
+  // image preview
+  document.getElementById('image_url').addEventListener('input', function() {
+    const wrap = document.getElementById('imgPreviewWrap');
+    const img  = document.getElementById('imgPreview');
+    if (this.value) {
+      img.src = this.value;
+      img.onerror = () => wrap.classList.add('hidden');
+      img.onload  = () => wrap.classList.remove('hidden');
+    } else {
+      wrap.classList.add('hidden');
+    }
+  });
+
+  // submit
+  document.getElementById('createForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const errEl  = document.getElementById('globalErr');
+    const submit = document.getElementById('submitBtn');
+    errEl.textContent = ''; errEl.style.display = '';
+
+    const post_type = document.querySelector('input[name=post_type]:checked')?.value;
+    if (!post_type) { errEl.textContent = 'Select Lost or Found'; errEl.style.display='block'; return; }
+
+    const payload = {
+      post_type,
+      item_name:   document.getElementById('item_name').value.trim(),
+      place:       document.getElementById('place').value.trim(),
+      location:    document.getElementById('location').value.trim(),
+      time:        document.getElementById('time').value.trim(),
+      description: descEl.value.trim(),
+      image_url:   document.getElementById('image_url').value.trim(),
+    };
+
+    submit.disabled = true; submit.textContent = 'Publishing…';
+    try {
+      await Posts.create(payload);
+      toast('Post published!', 'success');
+      setTimeout(() => window.location.href = '/pages/home.html', 900);
+    } catch (err) {
+      errEl.textContent = err.message; errEl.style.display = 'block';
+      submit.disabled = false; submit.textContent = 'Publish Post';
+    }
+  });
+})();
+</script>
+</body>
+</html>
